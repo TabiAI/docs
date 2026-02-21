@@ -1,0 +1,320 @@
+---
+title: Tenant API
+description: Tenant-facing API for offers, orders, wallet, and webhooks.
+---
+
+# Tenant API (Sandbox + Live)
+
+This document describes the tenant-facing API used by businesses to search offers, create orders, ticket, and manage webhooks.
+
+## Base URLs
+
+Use the environment base URL assigned to your account:
+
+- Sandbox: `https://<sandbox-api-base>`
+- Live: `https://<live-api-base>`
+
+## Authentication
+
+You can authenticate in **one** of two ways:
+
+1) **Bearer token** (dashboard / user session)
+```http
+Authorization: Bearer <jwt>
+```
+
+2) **API key** (server-to-server)
+```http
+x-api-key: <api_key>
+```
+
+API keys are created/rotated from the dashboard **Settings → API keys**.
+
+## Rate Limits
+
+Default: **120 requests per minute** per key (or per IP if unauthenticated).
+
+## Errors
+
+Errors are JSON:
+```json
+{ "error": "Message" }
+```
+Validation errors may include `details` with field-level info.
+
+---
+
+## Auth
+
+### POST /v1/auth/signup
+Create a tenant + admin user.
+
+**Body**
+```json
+{
+  "companyName": "Acme Travel",
+  "email": "ops@acme.com",
+  "password": "supersecret123"
+}
+```
+
+**Response**
+```json
+{
+  "token": "<jwt>",
+  "tenant": { "id": "...", "name": "Acme Travel" },
+  "apiKey": "tb_..."
+}
+```
+
+### POST /v1/auth/login
+Sign in with email + password.
+
+**Body**
+```json
+{ "email": "ops@acme.com", "password": "supersecret123" }
+```
+
+**Response**
+```json
+{ "token": "<jwt>", "tenant": { "id": "...", "name": "Acme Travel" } }
+```
+
+### GET /v1/auth/me
+Get current tenant + user.
+
+### GET /v1/auth/api-keys
+List API keys (masked).
+
+### POST /v1/auth/api-keys/rotate
+Rotate API key; returns a **new** key. Only the latest key is active.
+
+---
+
+## Wallet
+
+### GET /v1/wallet
+Get wallet balance and currency.
+
+### GET /v1/wallet/ledger
+Latest ledger entries (max 50).
+
+---
+
+## Locations (Airport suggestions)
+
+### GET /v1/air/locations
+Query airport suggestions.
+
+**Query**
+- `query` (string, min 2)
+- `limit` (1–15, optional)
+
+**Response**
+```json
+{
+  "data": [
+    {
+      "id": "arp_jfk_us",
+      "type": "airport",
+      "iata_code": "JFK",
+      "name": "John F. Kennedy International Airport",
+      "city_name": "New York",
+      "iata_city_code": "NYC",
+      "iata_country_code": "US",
+      "latitude": 40.640556,
+      "longitude": -73.778519,
+      "time_zone": "America/New_York"
+    }
+  ]
+}
+```
+
+---
+
+## Offers
+
+### POST /v1/air/search
+Create an offer request.
+
+**Body**
+```json
+{
+  "data": {
+    "slices": [
+      { "origin": "JFK", "destination": "LAX", "departure_date": "2026-03-22" }
+    ],
+    "passengers": [{ "type": "adult" }],
+    "cabin_class": "economy"
+  },
+  "return_offers": true,
+  "supplier_timeout": 20
+}
+```
+
+**Response**
+Offer request + offers array (when `return_offers: true`).
+
+### GET /v1/air/offers
+List offers for a request.
+
+**Query**
+- `offer_request_id` (required)
+- `limit`, `after`, `before`, `sort`, `max_connections` (optional)
+
+### GET /v1/air/offers/:id
+Get an offer by ID.
+
+**Query**
+- `return_available_services` (optional, `true|false`)
+
+---
+
+## Orders
+
+### POST /v1/air/orders
+Create an order from a selected offer.
+
+**Headers**
+- `Idempotency-Key: <unique-id>` (required)
+
+**Body**
+```json
+{
+  "offerId": "off_...",
+  "passengers": [
+    {
+      "id": "psg_1",
+      "given_name": "Test",
+      "family_name": "Traveler",
+      "born_on": "1990-01-01",
+      "gender": "m",
+      "title": "mr",
+      "email": "test@example.com",
+      "phone_number": "+12025550123"
+    }
+  ],
+  "services": [],
+  "metadata": { "reference": "ABC-123" }
+}
+```
+
+**Response**
+```json
+{
+  "id": "cmlv3rk1i000joiaglal7ri3d",
+  "status": "PENDING",
+  "totalCents": 26032,
+  "currency": "USD",
+  "createdAt": "2026-02-20T16:25:51.293Z"
+}
+```
+
+### POST /v1/air/orders/:id/passengers
+### PUT /v1/air/orders/:id/passengers
+Update passengers for a **PENDING** order.
+
+**Body**
+```json
+{
+  "passengers": [ ...same schema as above... ]
+}
+```
+
+### POST /v1/air/orders/:id/ticket
+Ticket a pending order (wallet must have sufficient balance).
+
+**Headers**
+- `Idempotency-Key: <unique-id>` (required)
+
+**Response**
+```json
+{ "order": { ... } }
+```
+
+### GET /v1/air/orders
+List recent orders.
+
+**Query**
+- `limit` (optional, default 25)
+- `status` (optional: `PENDING|PROCESSING|TICKETED|FAILED|CANCELED|REFUNDED`)
+
+### GET /v1/air/orders/:id
+Get an order with offer snapshot.
+
+**Response**
+```json
+{
+  "order": { ... },
+  "offer": { ... }
+}
+```
+
+---
+
+## Webhooks (Outbound to your system)
+
+### GET /v1/webhooks
+Get current webhook config.
+
+### PUT /v1/webhooks
+Create/update webhook config.
+
+**Body**
+```json
+{
+  "url": "https://example.com/webhooks",
+  "enabled": true,
+  "events": [
+    "order.created",
+    "order.ticketed",
+    "order.failed",
+    "refund.created",
+    "wallet.updated"
+  ],
+  "rotateSecret": false
+}
+```
+
+**Response**
+```json
+{
+  "webhook": {
+    "url": "...",
+    "enabled": true,
+    "events": [...],
+    "secret": "base64-...",
+    "updatedAt": "..."
+  }
+}
+```
+
+### Delivery format
+```json
+{
+  "id": "uuid",
+  "type": "order.ticketed",
+  "created_at": "2026-02-20T16:25:51.293Z",
+  "data": { ... }
+}
+```
+
+### Signature verification
+Each delivery includes:
+- `x-webhook-id`
+- `x-webhook-event`
+- `x-webhook-timestamp`
+- `x-webhook-signature`
+
+Signature is:
+```text
+HMAC_SHA256(secret, `${timestamp}.${payload}`)
+```
+
+---
+
+## Notes
+
+- All amounts are **USD**.
+- Orders require a **positive wallet balance** before ticketing.
+- Environment tokens and API keys are **environment-specific** (sandbox vs live).
