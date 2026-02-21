@@ -1,0 +1,33 @@
+---
+title: "Locations"
+description: "Airport suggestions for origin/destination inputs."
+---
+
+# Locations (airport suggestions)
+
+## GET /v1/air/locations
+Query airport suggestions.
+
+**Query**
+- `query` (string, min 2)
+- `limit` (1–15, optional)
+
+**Response**
+```json
+{
+  "data": [
+    {
+      "id": "arp_jfk_us",
+      "type": "airport",
+      "iata_code": "JFK",
+      "name": "John F. Kennedy International Airport",
+      "city_name": "New York",
+      "iata_city_code": "NYC",
+      "iata_country_code": "US",
+      "latitude": 40.640556,
+      "longitude": -73.778519,
+      "time_zone": "America/New_York"
+    }
+  ]
+}
+```

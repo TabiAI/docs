@@ -1,0 +1,40 @@
+---
+title: "Offers"
+description: "Search and retrieve offers."
+---
+
+# Offers
+
+## POST /v1/air/search
+Create an offer request.
+
+**Body**
+```json
+{
+  "data": {
+    "slices": [
+      { "origin": "JFK", "destination": "LAX", "departure_date": "2026-03-22" }
+    ],
+    "passengers": [{ "type": "adult" }],
+    "cabin_class": "economy"
+  },
+  "return_offers": true,
+  "supplier_timeout": 20
+}
+```
+
+**Response**
+Offer request + offers array (when `return_offers: true`).
+
+## GET /v1/air/offers
+List offers for a request.
+
+**Query**
+- `offer_request_id` (required)
+- `limit`, `after`, `before`, `sort`, `max_connections` (optional)
+
+## GET /v1/air/offers/:id
+Get an offer by ID.
+
+**Query**
+- `return_available_services` (optional, `true|false`)

@@ -13,8 +13,19 @@
         "tab": "API",
         "groups": [
           {
-            "group": "Tenant API",
-            "pages": ["index", "tenants-api"]
+            "group": "Overview",
+            "pages": ["index", "tenant-api/overview"]
+          },
+          {
+            "group": "API reference",
+            "pages": [
+              "tenant-api/auth",
+              "tenant-api/wallet",
+              "tenant-api/locations",
+              "tenant-api/offers",
+              "tenant-api/orders",
+              "tenant-api/webhooks"
+            ]
           }
         ]
       }

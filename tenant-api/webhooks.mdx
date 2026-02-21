@@ -1,0 +1,63 @@
+---
+title: "Webhooks"
+description: "Configure outbound webhooks to your system."
+---
+
+# Webhooks (outbound)
+
+## GET /v1/webhooks
+Get current webhook config.
+
+## PUT /v1/webhooks
+Create/update webhook config.
+
+**Body**
+```json
+{
+  "url": "https://example.com/webhooks",
+  "enabled": true,
+  "events": [
+    "order.created",
+    "order.ticketed",
+    "order.failed",
+    "refund.created",
+    "wallet.updated"
+  ],
+  "rotateSecret": false
+}
+```
+
+**Response**
+```json
+{
+  "webhook": {
+    "url": "...",
+    "enabled": true,
+    "events": [...],
+    "secret": "base64-...",
+    "updatedAt": "..."
+  }
+}
+```
+
+## Delivery format
+```json
+{
+  "id": "uuid",
+  "type": "order.ticketed",
+  "created_at": "2026-02-20T16:25:51.293Z",
+  "data": { ... }
+}
+```
+
+## Signature verification
+Each delivery includes:
+- `x-webhook-id`
+- `x-webhook-event`
+- `x-webhook-timestamp`
+- `x-webhook-signature`
+
+Signature is:
+```text
+HMAC_SHA256(secret, `${timestamp}.${payload}`)
+```

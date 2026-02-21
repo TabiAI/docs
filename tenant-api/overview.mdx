@@ -1,0 +1,41 @@
+---
+title: "Overview"
+description: "Base URLs, auth, rate limits, and error format."
+---
+
+# Tenant API overview
+
+This document describes the tenant-facing API used by businesses to search offers, create orders, ticket, and manage webhooks.
+
+## Base URLs
+
+- Sandbox: `https://sandbox.travelbase.ai`
+- Live: `https://live.travelbase.ai`
+
+## Authentication
+
+You can authenticate in one of two ways:
+
+1) **Bearer token** (dashboard / user session)
+```http
+Authorization: Bearer <jwt>
+```
+
+2) **API key** (server-to-server)
+```http
+x-api-key: <api_key>
+```
+
+API keys are created/rotated from the dashboard **Settings → API keys**.
+
+## Rate limits
+
+Default: **120 requests per minute** per key (or per IP if unauthenticated).
+
+## Errors
+
+Errors are JSON:
+```json
+{ "error": "Message" }
+```
+Validation errors may include `details` with field-level info.

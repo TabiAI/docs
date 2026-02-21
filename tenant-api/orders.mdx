@@ -1,0 +1,84 @@
+---
+title: "Orders"
+description: "Create, update, ticket, and fetch orders."
+---
+
+# Orders
+
+## POST /v1/air/orders
+Create an order from a selected offer.
+
+**Headers**
+- `Idempotency-Key: <unique-id>` (required)
+
+**Body**
+```json
+{
+  "offerId": "off_...",
+  "passengers": [
+    {
+      "id": "psg_1",
+      "given_name": "Test",
+      "family_name": "Traveler",
+      "born_on": "1990-01-01",
+      "gender": "m",
+      "title": "mr",
+      "email": "test@example.com",
+      "phone_number": "+12025550123"
+    }
+  ],
+  "services": [],
+  "metadata": { "reference": "ABC-123" }
+}
+```
+
+**Response**
+```json
+{
+  "id": "cmlv3rk1i000joiaglal7ri3d",
+  "status": "PENDING",
+  "totalCents": 26032,
+  "currency": "USD",
+  "createdAt": "2026-02-20T16:25:51.293Z"
+}
+```
+
+## POST /v1/air/orders/:id/passengers
+## PUT /v1/air/orders/:id/passengers
+Update passengers for a **PENDING** order.
+
+**Body**
+```json
+{
+  "passengers": [ ...same schema as above... ]
+}
+```
+
+## POST /v1/air/orders/:id/ticket
+Ticket a pending order (wallet must have sufficient balance).
+
+**Headers**
+- `Idempotency-Key: <unique-id>` (required)
+
+**Response**
+```json
+{ "order": { ... } }
+```
+
+## GET /v1/air/orders
+List recent orders.
+
+**Query**
+- `limit` (optional, default 25)
+- `status` (optional: `PENDING|PROCESSING|TICKETED|FAILED|CANCELED|REFUNDED`)
+
+## GET /v1/air/orders/:id
+Get an order with offer snapshot.
+
+**Response**
+```json
+{
+  "order": { ... },
+  "offer": { ... }
+}
+```

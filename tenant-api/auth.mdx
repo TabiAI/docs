@@ -1,0 +1,49 @@
+---
+title: "Auth"
+description: "Sign up, sign in, and manage API keys."
+---
+
+# Auth
+
+## POST /v1/auth/signup
+Create a tenant + admin user.
+
+**Body**
+```json
+{
+  "companyName": "Acme Travel",
+  "email": "ops@acme.com",
+  "password": "supersecret123"
+}
+```
+
+**Response**
+```json
+{
+  "token": "<jwt>",
+  "tenant": { "id": "...", "name": "Acme Travel" },
+  "apiKey": "tb_..."
+}
+```
+
+## POST /v1/auth/login
+Sign in with email + password.
+
+**Body**
+```json
+{ "email": "ops@acme.com", "password": "supersecret123" }
+```
+
+**Response**
+```json
+{ "token": "<jwt>", "tenant": { "id": "...", "name": "Acme Travel" } }
+```
+
+## GET /v1/auth/me
+Get current tenant + user.
+
+## GET /v1/auth/api-keys
+List API keys (masked).
+
+## POST /v1/auth/api-keys/rotate
+Rotate API key; returns a **new** key. Only the latest key is active.
