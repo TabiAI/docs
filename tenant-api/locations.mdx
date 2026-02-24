@@ -1,33 +1,236 @@
 ---
+
 title: "Locations"
-description: "Airport suggestions for origin/destination inputs."
+
+description: "Search and retrieve airport suggestions for origin and destination inputs."
+
 ---
 
-# Locations (airport suggestions)
+The Locations API provides **airport suggestions** for autocomplete and structured flight search inputs. It allows you to convert user-entered text such as airport names, cities, or IATA codes into normalized airport objects.
 
-## GET /v1/air/locations
-Query airport suggestions.
+This endpoint is typically used to power:
 
-**Query**
-- `query` (string, min 2)
-- `limit` (1–15, optional)
+- Origin and destination autocomplete fields
+- Airport and city lookup workflows
+- Flight search preparation
+- Timezone-aware scheduling and display
 
-**Response**
+---
+
+<CardGroup cols={3}>
+    <Card title="Autocomplete" icon="magnifying-glass">
+        Convert user input into structured airport suggestions.
+    </Card>
+
+    <Card title="Structured Data" icon="database">
+        Retrieve IATA codes, geo coordinates, and timezone metadata.
+    </Card>
+
+    <Card title="Flight Search Ready" icon="plane">
+        Use returned airport identifiers for offers and order creation.
+    </Card>
+</CardGroup>
+
+---
+
+## Endpoint
+```http
+GET https://sandbox.travelbase.ai/v1/air/locations
+```
+
+Returns airport suggestions matching a search query.
+
+---
+
+## Query parameters
+
+| Parameter | Type | Required | Constraints | Description |
+|---|---|---|---|---|
+| `query` | string | Yes | Minimum length: 2 | Airport name, city name, or IATA code. |
+| `limit` | integer | No | Range: 1–15 (default: 10) | Maximum number of results returned. |
+
+<Tip>
+    For optimal performance and user experience, debounce autocomplete requests by **200–350ms** and only query when the
+    user has entered at least 2 characters.
+</Tip>
+
+---
+
+## Example request
+
+<Tabs>
+    <Tab title="cURL">
+
+        ```bash
+        curl -X GET "https://sandbox.travelbase.ai/v1/air/locations?query=jfk&limit=10" \
+        -H "x-api-key: tb_live_xxxxxxx"
+        ```
+    </Tab>
+    <Tab title="HTTP">
+
+        ```http
+        GET /v1/air/locations?query=jfk&limit=10 HTTP/1.1
+        Host: sandbox.travelbase.ai
+        x-api-key: tb_live_xxxxxxx
+        ```
+    </Tab>
+
+    <Tab title="JAVASCRIPT">
+
+        ```javascript
+        const response = await fetch(
+        "https://sandbox.travelbase.ai/v1/air/locations?query=jfk&limit=10",
+        {
+            headers: {
+            "x-api-key": process.env.TRAVELBASE_API_KEY
+        }
+        }
+        );
+
+        const result = await response.json();
+        console.log(result.data);
+        ```
+    </Tab>
+
+</Tabs>
+
+# Example response
 ```json
 {
-  "data": [
-    {
-      "id": "arp_jfk_us",
-      "type": "airport",
-      "iata_code": "JFK",
-      "name": "John F. Kennedy International Airport",
-      "city_name": "New York",
-      "iata_city_code": "NYC",
-      "iata_country_code": "US",
-      "latitude": 40.640556,
-      "longitude": -73.778519,
-      "time_zone": "America/New_York"
-    }
-  ]
+"data": [
+{
+"id": "arp_jfk_us",
+"type": "airport",
+"iata_code": "JFK",
+"name": "John F. Kennedy International Airport",
+"city_name": "New York",
+"iata_city_code": "NYC",
+"iata_country_code": "US",
+"latitude": 40.640556,
+"longitude": -73.778519,
+"time_zone": "America/New_York"
+}
+]
 }
 ```
+
+---
+
+## Response schema
+
+### Root object
+
+| Field | Type | Description |
+|---|---|---|
+| `data` | array\<Location\> | List of airport suggestions matching the query. |
+
+
+### Location object
+
+Each object in `data[]` represents a single airport.
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Stable internal identifier for the airport. |
+| `type` | string | Location type. Currently always `airport`. |
+| `iata_code` | string | Airport IATA code (example: `JFK`). |
+| `name` | string | Full airport name. |
+| `city_name` | string | City where the airport is located. |
+| `iata_city_code` | string | IATA metropolitan city code (example: `NYC`). |
+| `iata_country_code` | string | IATA country code (example: `US`). |
+| `latitude` | number | Airport latitude coordinate in decimal degrees. |
+| `longitude` | number | Airport longitude coordinate in decimal degrees. |
+| `time_zone` | string | IANA timezone identifier (example: `America/New_York`). |
+
+---
+
+## Example display format
+
+Recommended display format for autocomplete suggestions:
+
+```text
+New York (NYC) — John F. Kennedy International Airport (JFK)
+```
+
+This format clearly communicates:
+
+- City
+- Airport name
+- Airport code
+
+---
+
+## Recommended integration flow
+
+<CardGroup cols={2}>
+    <Card title="1. User enters text" icon="keyboard">
+        Capture user input in the origin or destination field.
+    </Card>
+
+    <Card title="2. Query Locations API" icon="arrow-up-right">
+        Call `/v1/air/locations` with the user's search query.
+    </Card>
+
+    <Card title="3. Display suggestions" icon="list">
+        Render returned airports in an autocomplete dropdown.
+    </Card>
+
+    <Card title="4. Store selected airport" icon="check">
+        Store the selected airport's `id` and `iata_code` for downstream use.
+    </Card>
+</CardGroup>
+
+---
+
+## Best practices
+
+### Use airport ID internally
+
+Always store and reference the `id` field as the primary identifier.
+IATA codes may overlap or change, but the `id` remains stable.
+
+
+### Debounce requests
+
+Avoid sending a request on every keystroke.
+
+Use a debounce interval of **200–350ms** to improve performance and reduce API load.
+
+
+### Limit results
+
+Use the `limit` parameter to control payload size and improve response time.
+
+Example:
+
+```http
+GET https://sandbox.travelbase.ai/v1/air/locations?query=lag&limit=5
+```
+
+### Handle empty responses
+
+If no matching airports are found, the API returns:
+
+```json
+{
+  "data": []
+}
+```
+Display a helpful UI message such as:
+No airports found. Try a different search term.
+
+## Timezone handling
+
+The `time_zone` field is returned using the standard IANA timezone database format.
+
+Example values:
+
+```text
+America/New_York
+Europe/London
+Africa/Lagos
+```
+
+<Note> Use the returned timezone instead of inferring timezone from the client device. This ensures correct time
+    calculations for global flight operations. </Note>
+
