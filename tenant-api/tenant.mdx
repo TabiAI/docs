@@ -13,13 +13,11 @@ description: "View and update tenant-level configuration for your Travelbase acc
 <Card title="Base URL" icon="globe">
     Use the correct base URL for your environment.
     **Sandbox:** `https://sandbox-api.travelbase.ai`
-
-    [//]: # (**Live:** `https://api.travelbase.ai`)
 </Card>
 
 <Card title="Authentication" icon="key">
     Include your API key in the `Authorization` header.
-    <CodeBlock language="http">{`x-api-key: <api_key>`}</CodeBlock>
+    <CodeBlock language="http">{`x-api-key: tb_live_xxxxxxxxxxxxxxx`}</CodeBlock>
 </Card>
 
 ## Get tenant
@@ -31,7 +29,7 @@ description: "View and update tenant-level configuration for your Travelbase acc
 ### Example request
 
 ```bash
-curl -X GET "https://api.travelbase.ai/v1/tenant" \
+curl -X GET "https://sandbox.travelbase.ai/v1/tenant" \
   -H "Authorization: Bearer tb_live_xxxxxxxxxxxxxxxxx" \
   -H "Content-Type: application/json"
 ```
