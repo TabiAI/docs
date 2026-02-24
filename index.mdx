@@ -1,14 +1,65 @@
 ---
 title: "Introduction"
-description: "Introduction to the Travelbase Tenant API."
+description: "The Travelbase Tenant API enables secure, programmatic access to Travelbase’s travel infrastructure, supporting the complete booking lifecycle including offer discovery, order management, ticket issuance, wallet operations, and real-time event integrations."
 ---
-<Note icon ="server" color="purple">
-    ### Welcome to the Travelbase
 
-    Use the Travelbase Tenant API to integrate travel offers, create and manage orders, issue tickets, and receive real-time webhook events.
+<img
+    src="/images/travelbase-introduction.png"
+    alt="Travelbase platform overview showing offer discovery, order management, ticket issuance, wallet operations, and webhook integrations"
+    className="mt-6 mb-8 rounded-xl border"
+/>
 
-    The API is designed for secure, reliable server-to-server integrations and supports both sandbox and live environments.
+## What is Travelbase?
+
+Travelbase is an AI-powered corporate travel management platform that enables businesses to discover travel offers, manage bookings, issue tickets, and automate travel operations through a unified API.
+
+It abstracts the complexity of travel infrastructure, allowing organizations to integrate travel functionality directly into their applications, internal systems, and workflows securely and reliably.
+
+---
+
+
+
+<Note icon="server" color="purple">
+    ### Travelbase Tenant API
+
+    The Travelbase Tenant API provides programmatic access to Travelbase services, allowing you to search offers, create
+    and manage orders, issue tickets, manage wallets, and receive real-time webhook events.
+
+    It is designed for secure, reliable server-to-server integrations and supports both sandbox and production
+    environments.
 </Note>
+
+---
+
+## Key Features
+
+<CardGroup cols={2}>
+    <Card title="Offer Discovery" icon="magnifying-glass">
+        Search and retrieve available travel offers including pricing, availability, and metadata.
+    </Card>
+
+    <Card title="Order Management" icon="credit-card">
+        Create, retrieve, and manage travel orders and bookings programmatically.
+    </Card>
+
+    <Card title="Ticket Issuance" icon="ticket">
+        Issue and manage digital tickets linked to customer orders.
+    </Card>
+
+    <Card title="Secure Authentication" icon="shield-check">
+        Authenticate requests securely using API keys or bearer tokens.
+    </Card>
+
+    <Card title="Webhook Events" icon="webhook">
+        Receive real-time notifications for order lifecycle and system events.
+    </Card>
+
+    <Card title="Wallet Management" icon="wallet">
+        Manage customer wallets for credits, refunds, and promotional balances.
+    </Card>
+</CardGroup>
+
+---
 
 ## Start here
 
@@ -20,13 +71,13 @@ description: "Introduction to the Travelbase Tenant API."
     Learn about authentication, environments, rate limits, idempotency, and error handling.
 </Card>
 
+---
+
 ## Environments
 
 | Environment | Base URL |
 |------------|----------|
 | Sandbox | `https://sandbox.travelbase.ai` |
-
-[//]: # (| Live | `https://live.travelbase.ai` |)
 
 <Tip>
     Use the sandbox environment for development and testing before moving to production.

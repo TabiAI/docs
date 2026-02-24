@@ -1,11 +1,19 @@
 ---
 title: "Overview"
-description: "Base URLs, authentication, rate limits, idempotency, and error handling."
+description: "Core integration concepts including environments, authentication, rate limits, idempotency, error handling, and operational best practices for secure and reliable Travelbase API integrations."
 ---
+
+<img
+    src="/images/travel-base-technical.png"
+    alt="Travelbase platform overview showing offer discovery, order management, ticket issuance, wallet operations, and webhook integrations"
+    className="mt-6 mb-8 rounded-xl border"
+/>
 
 ## Tenant API Overview
 
-The Tenant API allows businesses to search offers, create and manage orders, issue tickets, and configure webhooks programmatically.
+The Travelbase Tenant API provides secure, programmatic access to Travelbase’s travel infrastructure, enabling businesses to discover offers, manage orders, issue tickets, manage wallets, and receive real-time webhook events.
+
+It is designed for reliable server-to-server integrations and supports the complete travel booking lifecycle, allowing organizations to integrate travel operations directly into their applications and workflows.
 
 <CardGroup cols={2}>
     <Card title="Sandbox URL" icon="flask">
@@ -13,16 +21,16 @@ The Tenant API allows businesses to search offers, create and manage orders, iss
 
         Isolated environment for development and testing.
     </Card>
-    <Card title="Live URL" icon="bolt">
+    <Card title="Production URL" icon="bolt">
+        Available in your Travelbase Business Dashboard under **Settings → API Keys**
 
-[//]: # (`https://live.travelbase.ai`)
-
-        Production environment for real-world operations.
+        Used for real-world operations and live transactions.
     </Card>
 </CardGroup>
 
 <Note>
-    The sandbox environment is fully isolated. Data created here does not affect your production environment or live billing.
+    The sandbox environment is fully isolated. Data created here does not affect your production environment or live
+    billing.
 </Note>
 
 ---
@@ -36,9 +44,8 @@ All API requests must be authenticated using either an API key or a bearer token
         Use API keys for secure, server-to-server integrations.
 
         ```http
-        x-api-key: <your_api_key>
+        x-api-key: tb_live_xxxxxxxxxxxxxxxxx
         ```
-
         <Tip>
             API keys provide stable, long-lived authentication and are ideal for backend systems.
         </Tip>
@@ -47,7 +54,7 @@ All API requests must be authenticated using either an API key or a bearer token
         Use bearer tokens when acting on behalf of a signed-in dashboard user.
 
         ```http
-        Authorization: Bearer <your_jwt>
+        Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         ```
     </Tab>
 </Tabs>
@@ -56,7 +63,8 @@ All API requests must be authenticated using either an API key or a bearer token
     **Managing API Keys:** Keys can be created and rotated in the dashboard under **Settings → API Keys**.
 
     <Warning>
-        Never expose API keys in client-side applications (web, mobile, or public code). Always store keys securely in backend systems or secret managers.
+        Never expose API keys in client-side applications (web, mobile, or public code). Always store keys securely in
+        backend systems or secret managers.
     </Warning>
 </Card>
 
@@ -66,14 +74,15 @@ All API requests must be authenticated using either an API key or a bearer token
 
 The API enforces rate limits to ensure system stability and fair usage across all tenants.
 
-<Card title="Default Rate Limit" icon="gauge-high">
+<Card title="Default Rate Limit" icon="gauge">
     **120 requests per minute** per API key.
 </Card>
 
 If a request exceeds the limit, the API returns a `429 Too Many Requests` status code.
 
 <Tip>
-    Implement retry logic using **exponential backoff** to safely handle rate limit responses and minimize service disruptions.
+    Implement retry logic using **exponential backoff** to safely handle rate limit responses and minimize service
+    disruptions.
 </Tip>
 
 ---
@@ -81,7 +90,7 @@ If a request exceeds the limit, the API returns a `429 Too Many Requests` status
 ## Error Handling
 
 Errors are returned using standard HTTP status codes and structured JSON responses to help you debug quickly.
-s
+
 ### Error Response Format
 
 ```json
@@ -123,7 +132,8 @@ Understanding how to handle responses and ensure data integrity is crucial for a
 | **500** | Internal Server Error | Something went wrong on our end. |
 
 <Warning>
-    **CRITICAL:** Always check the **HTTP status code** to determine success or failure before parsing the response body. Do not rely solely on the response content.
+    **CRITICAL:** Always check the **HTTP status code** to determine success or failure before parsing the response
+    body. Do not rely solely on the response content.
 </Warning>
 
 ---
@@ -132,37 +142,37 @@ Understanding how to handle responses and ensure data integrity is crucial for a
 
 Idempotency prevents duplicate resource creation caused by retries or network interruptions. Include an idempotency key when performing write operations (**POST** or **PUT**).
 
-
-
 ```http
 Idempotency-Key: <unique_uuid>
 
 ```
 
 <Note>
-    Idempotency Guarantee: If a request with the same key is received multiple times, the API will return the original response instead of creating duplicate resources. Use UUID v4 for these keys.
+    Idempotency Guarantee: If a request with the same key is received multiple times, the API will return the original
+    response instead of creating duplicate resources. Use UUID v4 for these keys.
 </Note>
 
 ## Next Steps
-## Explore our guides to start building your integration.
+
+Explore our guides to start building your integration.
 
 <CardGroup cols={3}>
-    <Card title="Tenants" icon="users" href="/tenants">
+    <Card title="Tenants" icon="users" href="/tenant-api/tenant">
         Manage organizations and sub-accounts.
     </Card>
-    <Card title="Wallets" icon="wallet" href="/wallets">
+    <Card title="Wallets" icon="wallet" href="/tenant-api/wallet">
         Handle balances, funds, and transactions.
     </Card>
-    <Card title="Locations" icon="map-pin" href="/locations">
+    <Card title="Locations" icon="map-pin" href="/tenant-api/locations">
         Manage physical and virtual service areas.
     </Card>
-    <Card title="Offers" icon="tags" href="/offers">
+    <Card title="Offers" icon="tag" href="/tenant-api/offers">
         Search available travel offers and pricing.
     </Card>
-    <Card title="Orders" icon="cart-shopping" href="/orders">
+    <Card title="Orders" icon="cart-shopping" href="/tenant-api/orders">
         The full flow for creating and managing orders.
     </Card>
-    <Card title="Webhooks" icon="webhook" href="/webhooks">
+    <Card title="Webhooks" icon="webhook" href="/tenant-api/webhooks">
         Receive real-time notifications for event updates.
     </Card>
 </CardGroup>

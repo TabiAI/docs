@@ -1,12 +1,70 @@
 ---
 title: "Wallet"
-description: "Wallet balance and ledger."
+description: "Retrieve wallet balance and view immutable ledger entries."
+---
+The Wallet API allows you to retrieve your current wallet balance and inspect immutable ledger entries representing all financial activity.
+
+The wallet is backed by a deterministic, append-only ledger to ensure financial integrity, auditability, and replayability.
+
+<Note>
+    Wallet balances are derived from ledger entries and are guaranteed to be consistent.
+</Note>
+
 ---
 
-# Wallet
+## Wallet Object
 
-## GET /v1/wallet
-Get wallet balance and currency.
+Represents the current wallet state.
 
-## GET /v1/wallet/ledger
-Latest ledger entries (max 50).
+| Field       | Type   | Description |
+|------------|--------|-------------|
+| id         | string | Unique wallet identifier |
+| balance    | string | Current wallet balance in minor units |
+| currency   | string | ISO 4217 currency code |
+| created_at | string | ISO 8601 timestamp |
+
+---
+
+## Ledger Entry Object
+
+Represents a single immutable financial transaction.
+
+| Field         | Type   | Description |
+|--------------|--------|-------------|
+| id           | string | Unique ledger entry ID |
+| type         | string | Entry type (`credit`, `debit`) |
+| amount       | string | Transaction amount in minor units |
+| currency     | string | ISO currency code |
+| reference    | string | External reference identifier |
+| description  | string | Human-readable description |
+| balance_after| string | Wallet balance after transaction |
+| created_at   | string | ISO 8601 timestamp |
+
+---
+
+# Get Wallet Balance
+
+Retrieve the current wallet balance and currency.
+
+<Card title="GET /v1/wallet" icon="wallet"/>
+
+## Request
+
+### Headers
+
+```http
+x-api-key: tb_live_xxxxxxxxxx
+```
+
+## Response
+```json{
+"id": "wal_8f4c9a1b",
+"balance": "125000",
+"currency": "USD",
+"created_at": "2026-02-23T14:12:00Z"
+}
+```
+```bash
+curl https://sandbox.travelbase.ai/v1/wallet \
+  -H "x-api-key: tb_live_xxxxxxxxxxxxxxxxx"
+```
