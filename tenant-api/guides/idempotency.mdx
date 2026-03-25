@@ -1,0 +1,210 @@
+---
+title: Idempotency & Retries
+description: Ensure safe retries and prevent duplicate operations in financial and critical workflows.
+icon: repeat
+---
+
+<Badge variant="critical">Critical for write operations that involves Flight booking</Badge>
+
+Idempotency guarantees that **the same request executed multiple times produces exactly the same result** — no side effects, no duplicate actions, no inconsistent state.
+
+---
+
+## Why It Matters
+
+Distributed systems are unreliable by nature. Network failures, timeouts, and unexpected retries are not edge cases — they are inevitable. Without idempotency, any of the following can silently corrupt your data:
+
+<CardGroup cols={3}>
+    <Card title="Duplicate Bookings" icon="calendar-x">
+        A retry creates two reservations for the same user on the same slot.
+    </Card>
+    <Card title="Double Charges" icon="credit-card">
+        A payment request retried after a timeout bills the customer twice.
+    </Card>
+    <Card title="Inconsistent State" icon="triangle-alert">
+        Partial writes leave your database in an undefined, unrecoverable state.
+    </Card>
+</CardGroup>
+
+<Callout type="warning">
+    Even a single duplicate transaction in a financial system can trigger compliance issues, failed audits, and customer disputes. Idempotency is non-negotiable.
+</Callout>
+
+---
+
+## How It Works
+
+Every mutating request should include an `Idempotency-Key` header containing a unique, client-generated identifier:
+
+```http
+POST /v1/payments HTTP/1.1
+Content-Type: application/json
+Idempotency-Key: e7b8c2d1-4f3a-4c6e-9b0d-2a1f5e8c3d7b
+
+{
+  "amount": 5000,
+  "currency": "usd",
+  "recipient": "acct_1A2B3C4D5E"
+}
+```
+
+When the server receives a request, it follows this logic:
+
+<Steps>
+    <Step title="Check for existing key">
+        The server looks up the `Idempotency-Key` in its store.
+    </Step>
+    <Step title="First-time request">
+        If no match is found, the request is processed normally and the result is persisted alongside the key.
+    </Step>
+    <Step title="Duplicate request (same payload)">
+        If the key already exists **and the payload matches**, the original response is returned immediately — no reprocessing.
+    </Step>
+    <Step title="Duplicate request (different payload)">
+        If the key exists **but the payload differs**, the server returns a `422 Unprocessable Entity` conflict error.
+    </Step>
+</Steps>
+
+---
+
+## Behavior Reference
+
+<Table>
+    <Thead>
+        <Tr>
+            <Th>Scenario</Th>
+            <Th>Payload</Th>
+            <Th>Result</Th>
+            <Th>HTTP Status</Th>
+        </Tr>
+    </Thead>
+    <Tbody>
+        <Tr>
+            <Td>First request</Td>
+            <Td>Any</Td>
+            <Td>Processed and stored</Td>
+            <Td><Badge variant="success">200 / 201</Badge></Td>
+        </Tr>
+        <Tr>
+            <Td>Duplicate request</Td>
+            <Td>Identical</Td>
+            <Td>Cached response returned</Td>
+            <Td><Badge variant="neutral">200</Badge></Td>
+        </Tr>
+        <Tr>
+            <Td>Duplicate request</Td>
+            <Td>Different</Td>
+            <Td>Conflict error returned</Td>
+            <Td><Badge variant="danger">422</Badge></Td>
+        </Tr>
+        <Tr>
+            <Td>Expired key (after TTL)</Td>
+            <Td>Any</Td>
+            <Td>Treated as new request</Td>
+            <Td><Badge variant="success">200 / 201</Badge></Td>
+        </Tr>
+    </Tbody>
+</Table>
+
+---
+
+## Implementation Guide
+
+### Generating keys
+
+Always generate keys on the **client side**, before the request is sent. UUIDs (v4) are the standard choice.
+
+```ts
+import { v4 as uuidv4 } from "uuid";
+
+const idempotencyKey = uuidv4();
+// → "e7b8c2d1-4f3a-4c6e-9b0d-2a1f5e8c3d7b"
+```
+
+### Persisting keys
+
+Store the key **before** you send the request — not after. If your process crashes mid-flight, you need the key available for the retry.
+
+```ts
+//  Correct order of operations
+await db.pendingRequests.create({ key: idempotencyKey, payload });
+const response = await api.post("/v1/payments", payload, {
+  headers: { "Idempotency-Key": idempotencyKey },
+});
+await db.pendingRequests.update({ key: idempotencyKey, status: "complete", response });
+```
+
+### Retry with backoff
+
+Combine idempotency keys with exponential backoff for safe, automatic retries:
+
+```ts
+async function postWithRetry(url: string, payload: object, retries = 3) {
+  const idempotencyKey = uuidv4();
+
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey, // Same key on every retry
+        },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      if (attempt === retries - 1) throw err;
+      await sleep(2 ** attempt * 100); // 100ms, 200ms, 400ms…
+    }
+  }
+}
+```
+
+<Callout type="info">
+    Always reuse the **same key** across all retry attempts for a single logical operation. Generating a new key on each retry defeats the purpose entirely.
+</Callout>
+
+---
+
+## Best Practices
+
+<CardGroup cols={3}>
+    <Card title="Use UUIDs" icon="hash">
+        Generate a cryptographically random UUID v4 for every new logical operation. Never derive keys from request data.
+    </Card>
+    <Card title="Persist before sending" icon="save">
+        Write the key to durable storage before making the request so retries after crashes use the original key.
+    </Card>
+    <Card title="Scope to one operation" icon="target">
+        One key = one operation. Never reuse a key for a different action, even if the payload looks similar.
+    </Card>
+</CardGroup>
+
+---
+
+## Common Mistakes
+
+| Mistake | Why It's Dangerous | Fix |
+|---|---|---|
+| Reusing keys across different requests | A cached response from operation A is returned for operation B | Generate a fresh UUID per operation |
+| Not persisting keys before sending | A crash between send and store means retries use a new key, causing duplicates | Store the key first, then send |
+| Ignoring `422` conflict errors | Silent data corruption or unintended overwrites | Treat `422` as a hard stop — investigate before retrying |
+| Using sequential IDs as keys | Predictable keys can collide across clients or sessions | Always use UUID v4 or a CSPRNG-generated value |
+| Generating a new key per retry | Each retry is treated as a fresh request, defeating idempotency | One key per logical operation, reused on every retry attempt |
+
+---
+
+## Key Expiry & TTL
+
+Idempotency keys are not stored forever. Most systems enforce a TTL (typically **24 hours**). After expiry, resubmitting the same key is treated as a brand-new request.
+
+<Callout type="warning">
+    Do not rely on idempotency keys as a long-term deduplication mechanism. For long-lived deduplication, implement application-level checks (e.g., unique constraints in your database).
+</Callout>
+
+---
+
+## Related
+- [Error Handling & Status Codes](/docs/error-handling)
+- [Rate Limits & Backoff](/docs/rate-limits)
+- [Webhook Delivery Guarantees](/docs/webhooks)

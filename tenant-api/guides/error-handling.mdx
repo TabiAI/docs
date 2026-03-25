@@ -1,0 +1,745 @@
+---
+title: Error Handling
+description: Every Travelbase API error follows a consistent, structured format — whether a flight booking fails at authentication, a passenger record fails validation, or a payment is declined at the final leg of checkout. No matter where in the journey something goes wrong, the shape of the response is always predictable.
+icon: triangle-exclamation
+---
+
+<Callout type="info">
+    The `errorCode` field is the most reliable signal for programmatic error handling. HTTP status codes indicate broad categories; error codes give you the exact diagnosis.
+</Callout>
+
+---
+
+## Error Response Format
+
+All error responses share a common envelope:
+
+```json
+{
+  "success": false,
+  "statusCode": 400,
+  "errorCode": "TB_AUTH_101",
+  "message": "Invalid API key",
+  "fault": "client",
+  "retryable": true,
+  "suggestedAction": "Verify your API key and try again",
+  "reason": "Invalid API key",
+  "environment": "sandbox",
+  "apiVersion": "1.0.0"
+}
+```
+
+### Field Reference
+
+<Table>
+    <Thead>
+        <Tr>
+            <Th>Field</Th>
+            <Th>Type</Th>
+            <Th>Description</Th>
+        </Tr>
+    </Thead>
+    <Tbody>
+        <Tr>
+            <Td>`success`</Td>
+            <Td>`boolean`</Td>
+            <Td>Always `false` for error responses</Td>
+        </Tr>
+        <Tr>
+            <Td>`statusCode`</Td>
+            <Td>`number`</Td>
+            <Td>HTTP status code mirrored in the body for logging convenience</Td>
+        </Tr>
+        <Tr>
+            <Td>`errorCode`</Td>
+            <Td>`string`</Td>
+            <Td>Structured Travelbase error code — the primary field for programmatic handling</Td>
+        </Tr>
+        <Tr>
+            <Td>`message`</Td>
+            <Td>`string`</Td>
+            <Td>Human-readable summary of the error</Td>
+        </Tr>
+        <Tr>
+            <Td>`fault`</Td>
+            <Td>`"client" \| "server"`</Td>
+            <Td>Whether the error originated from your request or from Travelbase infrastructure</Td>
+        </Tr>
+        <Tr>
+            <Td>`retryable`</Td>
+            <Td>`boolean`</Td>
+            <Td>Whether retrying the same request may succeed — safe to use for automated retry logic</Td>
+        </Tr>
+        <Tr>
+            <Td>`suggestedAction`</Td>
+            <Td>`string`</Td>
+            <Td>Recommended next step for resolution — safe to display to support staff</Td>
+        </Tr>
+        <Tr>
+            <Td>`reason`</Td>
+            <Td>`string \| FieldError[]`</Td>
+            <Td>String for most errors; array of field-level objects for validation failures</Td>
+        </Tr>
+        <Tr>
+            <Td>`environment`</Td>
+            <Td>`"sandbox" \| "production"`</Td>
+            <Td>Confirms which environment the error occurred in</Td>
+        </Tr>
+        <Tr>
+            <Td>`apiVersion`</Td>
+            <Td>`string`</Td>
+            <Td>The API version that processed the request</Td>
+        </Tr>
+    </Tbody>
+</Table>
+
+---
+
+## Validation Errors
+
+When a request fails field-level validation — for example, submitting a booking without a passenger email — the `reason` field becomes an array of objects, each describing a specific field that failed:
+
+```json
+{
+  "success": false,
+  "status": "error",
+  "statusCode": 400,
+  "errorCode": "TB_VAL_302",
+  "message": "Validation failed",
+  "fault": "client",
+  "retryable": true,
+  "reason": [
+    {
+      "field": "email",
+      "message": "Required"
+    },
+    {
+      "field": "password",
+      "message": "Required"
+    }
+  ],
+  "apiVersion": "1.0.0"
+}
+```
+
+Use the `reason` array to surface field-specific feedback directly in your booking forms. Each object maps precisely to a form field, making inline validation straightforward:
+
+```ts
+function handleValidationError(error: TravelbaseError) {
+  if (error.errorCode === "TB_VAL_302" && Array.isArray(error.reason)) {
+    for (const fieldError of error.reason) {
+      setFieldError(fieldError.field, fieldError.message);
+    }
+  }
+}
+```
+
+---
+
+## Error Code Catalog
+
+Error codes follow a structured namespace: `TB_<CATEGORY>_<CODE>`. This makes it easy to handle entire categories with a single prefix check before falling through to specific codes.
+
+### Authentication — `TB_AUTH_*`
+
+<Table>
+    <Thead>
+        <Tr>
+            <Th>Code</Th>
+            <Th>Name</Th>
+            <Th>HTTP</Th>
+            <Th>Retryable</Th>
+            <Th>Resolution</Th>
+        </Tr>
+    </Thead>
+    <Tbody>
+        <Tr>
+            <Td>`TB_AUTH_100`</Td>
+            <Td>AUTH_MISSING</Td>
+            <Td><Badge variant="warning">401</Badge></Td>
+            <Td>No</Td>
+            <Td>Include an `Authorization: Bearer <token>` header on the request</Td>
+        </Tr>
+        <Tr>
+            <Td>`TB_AUTH_101`</Td>
+            <Td>AUTH_INVALID</Td>
+            <Td><Badge variant="warning">401</Badge></Td>
+            <Td>No</Td>
+            <Td>Check the API key value — verify it matches exactly what was issued in the dashboard</Td>
+        </Tr>
+        <Tr>
+            <Td>`TB_AUTH_102`</Td>
+            <Td>AUTH_EXPIRED</Td>
+            <Td><Badge variant="warning">401</Badge></Td>
+            <Td>Yes</Td>
+            <Td>Refresh the access token using your refresh token, then replay the request</Td>
+        </Tr>
+        <Tr>
+            <Td>`TB_AUTH_103`</Td>
+            <Td>AUTH_BLOCKED</Td>
+            <Td><Badge variant="danger">403</Badge></Td>
+            <Td>No</Td>
+            <Td>Account has been suspended — contact Travelbase support to investigate</Td>
+        </Tr>
+        <Tr>
+            <Td>`TB_AUTH_104`</Td>
+            <Td>SESSION_EXPIRED</Td>
+            <Td><Badge variant="warning">401</Badge></Td>
+            <Td>Yes</Td>
+            <Td>Session has lapsed — prompt the traveller to re-authenticate and retry</Td>
+        </Tr>
+    </Tbody>
+</Table>
+
+### Permissions — `TB_PERM_*`
+
+<Table>
+    <Thead>
+        <Tr>
+            <Th>Code</Th>
+            <Th>Name</Th>
+            <Th>HTTP</Th>
+            <Th>Retryable</Th>
+            <Th>Resolution</Th>
+        </Tr>
+    </Thead>
+    <Tbody>
+        <Tr>
+            <Td>`TB_PERM_200`</Td>
+            <Td>ACCESS_DENIED</Td>
+            <Td><Badge variant="danger">403</Badge></Td>
+            <Td>No</Td>
+            <Td>The authenticated identity does not have permission for this resource — check your API key scope or role assignment</Td>
+        </Tr>
+        <Tr>
+            <Td>`TB_PERM_201`</Td>
+            <Td>ACTION_NOT_ALLOWED</Td>
+            <Td><Badge variant="danger">403</Badge></Td>
+            <Td>No</Td>
+            <Td>This action is not permitted in the current account state or tier — review your plan and enabled features</Td>
+        </Tr>
+    </Tbody>
+</Table>
+
+### Validation — `TB_VAL_*`
+
+<Table>
+    <Thead>
+        <Tr>
+            <Th>Code</Th>
+            <Th>Name</Th>
+            <Th>HTTP</Th>
+            <Th>Retryable</Th>
+            <Th>Resolution</Th>
+        </Tr>
+    </Thead>
+    <Tbody>
+        <Tr>
+            <Td>`TB_VAL_300`</Td>
+            <Td>INVALID_INPUT</Td>
+            <Td><Badge variant="neutral">400</Badge></Td>
+            <Td>No</Td>
+            <Td>A request field contains an unacceptable value — consult the endpoint schema and correct the payload</Td>
+        </Tr>
+        <Tr>
+            <Td>`TB_VAL_301`</Td>
+            <Td>FIELD_FORMAT_INVALID</Td>
+            <Td><Badge variant="neutral">400</Badge></Td>
+            <Td>No</Td>
+            <Td>A field does not match the expected format (e.g. date as `YYYY-MM-DD`, phone in E.164 format)</Td>
+        </Tr>
+        <Tr>
+            <Td>`TB_VAL_302`</Td>
+            <Td>VALIDATION_ERROR</Td>
+            <Td><Badge variant="neutral">400</Badge></Td>
+            <Td>No</Td>
+            <Td>One or more required fields are missing — inspect the `reason` array for field-level detail</Td>
+        </Tr>
+        <Tr>
+            <Td>`TB_VAL_303`</Td>
+            <Td>DUPLICATE_RESOURCE</Td>
+            <Td><Badge variant="neutral">409</Badge></Td>
+            <Td>No</Td>
+            <Td>A resource with an identical unique key already exists — retrieve the existing record instead of creating a new one</Td>
+        </Tr>
+    </Tbody>
+</Table>
+
+### Resources — `TB_RES_*`
+
+<Table>
+    <Thead>
+        <Tr>
+            <Th>Code</Th>
+            <Th>Name</Th>
+            <Th>HTTP</Th>
+            <Th>Retryable</Th>
+            <Th>Resolution</Th>
+        </Tr>
+    </Thead>
+    <Tbody>
+        <Tr>
+            <Td>`TB_RES_400`</Td>
+            <Td>RESOURCE_NOT_FOUND</Td>
+            <Td><Badge variant="neutral">404</Badge></Td>
+            <Td>No</Td>
+            <Td>The booking, flight, hotel, or traveller record does not exist or is not accessible by this key</Td>
+        </Tr>
+        <Tr>
+            <Td>`TB_RES_401`</Td>
+            <Td>RESOURCE_EXISTS</Td>
+            <Td><Badge variant="neutral">409</Badge></Td>
+            <Td>No</Td>
+            <Td>You are attempting to create something that already exists — use an update operation instead</Td>
+        </Tr>
+        <Tr>
+            <Td>`TB_RES_402`</Td>
+            <Td>RESOURCE_STATE_INVALID</Td>
+            <Td><Badge variant="neutral">409</Badge></Td>
+            <Td>No</Td>
+            <Td>The resource is in a state that does not allow this action (e.g., cancelling an already-departed booking) — check the resource's current `status` field</Td>
+        </Tr>
+    </Tbody>
+</Table>
+
+### System — `TB_SYS_*`
+
+<Table>
+    <Thead>
+        <Tr>
+            <Th>Code</Th>
+            <Th>Name</Th>
+            <Th>HTTP</Th>
+            <Th>Retryable</Th>
+            <Th>Resolution</Th>
+        </Tr>
+    </Thead>
+    <Tbody>
+        <Tr>
+            <Td>`TB_SYS_600`</Td>
+            <Td>INTERNAL_ERROR</Td>
+            <Td><Badge variant="danger">500</Badge></Td>
+            <Td>Yes</Td>
+            <Td>An unexpected server-side error occurred — retry with exponential backoff; escalate to support if it persists</Td>
+        </Tr>
+        <Tr>
+            <Td>`TB_SYS_602`</Td>
+            <Td>UNSUPPORTED_ACTION</Td>
+            <Td><Badge variant="neutral">400</Badge></Td>
+            <Td>No</Td>
+            <Td>The operation is not supported for this resource type or API version — review the changelog for deprecations</Td>
+        </Tr>
+        <Tr>
+            <Td>`TN_ISE_901`</Td>
+            <Td>INTERNAL_SERVER_ERROR</Td>
+            <Td><Badge variant="danger">500</Badge></Td>
+            <Td>Yes</Td>
+            <Td>Critical infrastructure error — contact support with the full response body and request ID</Td>
+        </Tr>
+    </Tbody>
+</Table>
+
+### Rate & Quota Limits — `TB_LIM_*`
+
+<Table>
+    <Thead>
+        <Tr>
+            <Th>Code</Th>
+            <Th>Name</Th>
+            <Th>HTTP</Th>
+            <Th>Retryable</Th>
+            <Th>Resolution</Th>
+        </Tr>
+    </Thead>
+    <Tbody>
+        <Tr>
+            <Td>`TB_LIM_700`</Td>
+            <Td>RATE_LIMIT_EXCEEDED</Td>
+            <Td><Badge variant="warning">429</Badge></Td>
+            <Td>Yes</Td>
+            <Td>Too many requests in the current window — back off and retry after the `Retry-After` header value (in seconds)</Td>
+        </Tr>
+        <Tr>
+            <Td>`TB_LIM_701`</Td>
+            <Td>QUOTA_EXCEEDED</Td>
+            <Td><Badge variant="warning">429</Badge></Td>
+            <Td>No</Td>
+            <Td>Your plan's monthly booking or search quota has been reached — upgrade your plan or wait for the quota reset</Td>
+        </Tr>
+        <Tr>
+            <Td>`TB_LIM_702`</Td>
+            <Td>TOO_MANY_ATTEMPTS</Td>
+            <Td><Badge variant="warning">429</Badge></Td>
+            <Td>Yes</Td>
+            <Td>Too many failed authentication attempts — wait for the lockout window to expire before retrying</Td>
+        </Tr>
+    </Tbody>
+</Table>
+
+### Payments — `TB_PAY_*`
+
+<Callout type="warning">
+    Payment errors require careful handling. Always check `retryable` before attempting a retry — retrying a non-retryable payment error can result in multiple authorisation holds on a traveller's card.
+</Callout>
+
+<Table>
+    <Thead>
+        <Tr>
+            <Th>Code</Th>
+            <Th>Name</Th>
+            <Th>HTTP</Th>
+            <Th>Retryable</Th>
+            <Th>Resolution</Th>
+        </Tr>
+    </Thead>
+    <Tbody>
+        <Tr>
+            <Td>`TB_PAY_800`</Td>
+            <Td>PAYMENT_FAILED</Td>
+            <Td><Badge variant="danger">402</Badge></Td>
+            <Td>No</Td>
+            <Td>The payment was declined by the issuing bank — prompt the traveller to use a different payment method</Td>
+        </Tr>
+        <Tr>
+            <Td>`TB_PAY_801`</Td>
+            <Td>PAYMENT_METHOD_UNSUPPORTED</Td>
+            <Td><Badge variant="neutral">400</Badge></Td>
+            <Td>No</Td>
+            <Td>The payment method type is not accepted for this booking type or region — present a supported alternative</Td>
+        </Tr>
+        <Tr>
+            <Td>`TB_PAY_802`</Td>
+            <Td>REFUND_FAILED</Td>
+            <Td><Badge variant="danger">500</Badge></Td>
+            <Td>Yes</Td>
+            <Td>The refund could not be processed — retry once; if it fails again, escalate to Travelbase support with the order ID</Td>
+        </Tr>
+    </Tbody>
+</Table>
+
+### Tenant Status — `TENANT_*`
+
+These errors apply when your platform operates in a multi-tenant context. They reflect the operational status of the tenant account making the request.
+
+<Table>
+    <Thead>
+        <Tr>
+            <Th>Code</Th>
+            <Th>HTTP</Th>
+            <Th>Meaning</Th>
+            <Th>Resolution</Th>
+        </Tr>
+    </Thead>
+    <Tbody>
+        <Tr>
+            <Td>`TENANT_PENDING_APPROVAL`</Td>
+            <Td><Badge variant="neutral">403</Badge></Td>
+            <Td>Tenant account is awaiting onboarding review</Td>
+            <Td>No action needed — await the approval email from the Travelbase partnerships team</Td>
+        </Tr>
+        <Tr>
+            <Td>`TENANT_REJECTED`</Td>
+            <Td><Badge variant="danger">403</Badge></Td>
+            <Td>Tenant application was not approved</Td>
+            <Td>Contact partnerships@travelbase.com to understand the reason and whether reapplication is possible</Td>
+        </Tr>
+        <Tr>
+            <Td>`TENANT_SUSPENDED`</Td>
+            <Td><Badge variant="danger">403</Badge></Td>
+            <Td>Tenant account has been suspended due to a policy or compliance issue</Td>
+            <Td>Contact support immediately — active bookings may be at risk</Td>
+        </Tr>
+        <Tr>
+            <Td>`TENANT_UNAVAILABLE`</Td>
+            <Td><Badge variant="warning">503</Badge></Td>
+            <Td>Tenant services are temporarily unavailable</Td>
+            <Td>Retry with backoff — this is typically a transient infrastructure state</Td>
+        </Tr>
+    </Tbody>
+</Table>
+
+---
+
+## Handling Errors in Code
+
+The following patterns cover the full error handling lifecycle for a Travelbase integration.
+
+<Tabs>
+    <Tab title="TypeScript">
+
+        ```ts
+        import type { TravelbaseError, FieldError } from "@travelbase/sdk";
+
+        async function createBooking(payload: BookingPayload) {
+        try {
+        return await travelbase.bookings.create(payload);
+    } catch (err) {
+        if (!isTravelbaseError(err)) throw err;
+        return handleTravelbaseError(err);
+    }
+    }
+
+        function handleTravelbaseError(error: TravelbaseError) {
+        const { errorCode, retryable, suggestedAction } = error;
+
+        // Authentication — token has lapsed mid-session
+        if (errorCode === "TB_AUTH_102" || errorCode === "TB_AUTH_104") {
+        return refreshTokenAndRetry();
+    }
+
+        // Validation — surface field-level errors back to the booking form
+        if (errorCode === "TB_VAL_302" && Array.isArray(error.reason)) {
+        for (const field of error.reason as FieldError[]) {
+        setFormError(field.field, field.message);
+    }
+        return;
+    }
+
+        // Payment declined — prompt traveller to use another card
+        if (errorCode === "TB_PAY_800") {
+        return showPaymentDeclinedModal();
+    }
+
+        // Rate limit — respect the Retry-After header
+        if (errorCode === "TB_LIM_700") {
+        const retryAfter = error.headers?.["retry-after"] ?? 60;
+        return scheduleRetry(retryAfter * 1000);
+    }
+
+        // Tenant issues — operational block, not a code bug
+        if (errorCode.startsWith("TENANT_")) {
+        return showTenantStatusBanner(errorCode);
+    }
+
+        // Server-side retryable errors
+        if (error.fault === "server" && retryable) {
+        return retryWithBackoff(createBooking, payload);
+    }
+
+        // Non-retryable client errors — log and surface the suggestion
+        console.error(`[Travelbase] ${errorCode}: ${suggestedAction}`);
+        throw error;
+    }
+        ```
+
+    </Tab>
+    <Tab title="Python">
+
+        ```python
+        from travelbase import TravelbaseError
+
+        def create_booking(payload: dict):
+        try:
+        return travelbase.bookings.create(payload)
+        except TravelbaseError as err:
+        return handle_travelbase_error(err)
+
+        def handle_travelbase_error(err: TravelbaseError):
+        code = err.error_code
+
+        if code in ("TB_AUTH_102", "TB_AUTH_104"):
+        return refresh_token_and_retry()
+
+        if code == "TB_VAL_302" and isinstance(err.reason, list):
+        for field_error in err.reason:
+        set_form_error(field_error["field"], field_error["message"])
+        return
+
+        if code == "TB_PAY_800":
+        return show_payment_declined()
+
+        if code == "TB_LIM_700":
+        retry_after = int(err.headers.get("retry-after", 60))
+        return schedule_retry(delay_seconds=retry_after)
+
+        if code.startswith("TENANT_"):
+        return show_tenant_status_banner(code)
+
+        if err.fault == "server" and err.retryable:
+        return retry_with_backoff(create_booking, payload)
+
+        raise err
+        ```
+
+    </Tab>
+    <Tab title="Go">
+
+        ```go
+        func createBooking(payload BookingPayload) (*Booking, error) {
+        booking, err := client.Bookings.Create(payload)
+        if err == nil {
+        return booking, nil
+    }
+
+        tbErr, ok := err.(*TravelbaseError)
+        if !ok {
+        return nil, err
+    }
+
+        switch tbErr.ErrorCode {
+        case "TB_AUTH_102", "TB_AUTH_104":
+        return refreshAndRetry(payload)
+
+        case "TB_VAL_302":
+        return nil, formatValidationErrors(tbErr.Reason)
+
+        case "TB_PAY_800":
+        return nil, ErrPaymentDeclined
+
+        case "TB_LIM_700":
+        retryAfter := tbErr.RetryAfterSeconds(60)
+        time.Sleep(time.Duration(retryAfter) * time.Second)
+        return createBooking(payload)
+    }
+
+        if strings.HasPrefix(tbErr.ErrorCode, "TENANT_") {
+        return nil, fmt.Errorf("tenant issue: %s", tbErr.ErrorCode)
+    }
+
+        if tbErr.Fault == "server" && tbErr.Retryable {
+        return retryWithBackoff(createBooking, payload)
+    }
+
+        return nil, tbErr
+    }
+        ```
+
+    </Tab>
+</Tabs>
+
+---
+
+## Retry Strategy
+
+Not every error should be retried. Use `retryable: true` as your gate, then apply exponential backoff to avoid overwhelming the API during degraded conditions.
+
+```ts
+async function retryWithBackoff<T>(
+    fn: () => Promise<T>,
+        maxAttempts = 4,
+        baseDelayMs = 300
+        ): Promise<T> {
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+            return await fn();
+        } catch (err) {
+            const isLast = attempt === maxAttempts;
+            const isRetryable = isTravelbaseError(err) && err.retryable;
+
+            if (isLast || !isRetryable) throw err;
+
+            const delay = baseDelayMs * 2 ** (attempt - 1); // 300ms → 600ms → 1.2s → 2.4s
+            const jitter = Math.random() * 100;
+            await sleep(delay + jitter);
+        }
+        }
+            throw new Error("Unreachable");
+        }
+            ```
+
+            <Callout type="info">
+                Add random jitter (a small random offset on top of the delay) to prevent a thundering herd — many clients retrying in perfect lockstep can amplify an outage rather than recover from it.
+            </Callout>
+
+            ---
+
+            ## Decision Tree
+
+            When you receive an error, follow this path to resolution:
+
+            <Steps>
+                <Step title="Check `fault`">
+                    `"client"` means your request needs to change before retrying. `"server"` means the problem is on Travelbase's side and may resolve on its own.
+                </Step>
+                <Step title="Check `retryable`">
+                    If `false`, do not retry — fix the request first. If `true`, proceed to backoff.
+                </Step>
+                <Step title="Match on `errorCode`">
+                    Use the catalog above to understand the exact cause. Handle auth, validation, payments, and tenant errors with dedicated logic paths.
+                </Step>
+                <Step title="Use `suggestedAction`">
+                    Surface this field to internal support tooling or operations dashboards. It is written for humans, not machines.
+                </Step>
+                <Step title="Escalate if needed">
+                    For `TB_SYS_600`, `TN_ISE_901`, `TB_PAY_802`, or persistent `TENANT_SUSPENDED`, open a support ticket with the full error body and your request ID.
+                </Step>
+            </Steps>
+
+            ---
+
+            ## Common Mistakes
+
+            | Mistake | Consequence | Fix |
+            |---|---|---|
+            | Retrying non-retryable errors in a loop | Duplicate charges, burnt quota, account lockout | Always check `retryable: false` before retrying |
+            | Swallowing `TB_RES_402` (invalid resource state) | Attempting to cancel a departed flight silently fails | Check the booking's `status` field before mutating it |
+            | Ignoring `TENANT_SUSPENDED` | All bookings for affected travellers are silently blocked | Monitor for tenant codes and alert your operations team immediately |
+            | Using `message` for programmatic branching | Prone to breaking if copy changes | Always branch on `errorCode`, never on `message` |
+            | Not reading the `reason` array on `TB_VAL_302` | Generic "something went wrong" shown to travellers | Map `reason` fields directly to your booking form for inline feedback |
+            | Retrying `TB_PAY_800` automatically | Multiple authorisation holds on the traveller's card | Payment declines require human action — prompt for a different payment method |
+
+            ---
+
+            ## TypeScript Error Code Enum
+
+            Copy this enum directly into your project for compile-time safety across all error handling code:
+
+            ```ts
+            export enum TravelbaseErrorCode {
+                // Authentication
+                AUTH_MISSING              = "TB_AUTH_100",
+                AUTH_INVALID              = "TB_AUTH_101",
+                AUTH_EXPIRED              = "TB_AUTH_102",
+                AUTH_BLOCKED              = "TB_AUTH_103",
+                SESSION_EXPIRED           = "TB_AUTH_104",
+
+                // Permissions
+                ACCESS_DENIED             = "TB_PERM_200",
+                ACTION_NOT_ALLOWED        = "TB_PERM_201",
+
+                // Validation
+                INVALID_INPUT             = "TB_VAL_300",
+                FIELD_FORMAT_INVALID      = "TB_VAL_301",
+                VALIDATION_ERROR          = "TB_VAL_302",
+                DUPLICATE_RESOURCE        = "TB_VAL_303",
+
+                // Resources
+                RESOURCE_NOT_FOUND        = "TB_RES_400",
+                RESOURCE_EXISTS           = "TB_RES_401",
+                RESOURCE_STATE_INVALID    = "TB_RES_402",
+
+                // Bad Request
+                BAD_REQUEST               = "TB_BR_403",
+
+                // System
+                INTERNAL_ERROR            = "TB_SYS_600",
+                UNSUPPORTED_ACTION        = "TB_SYS_602",
+                INTERNAL_SERVER_ERROR     = "TN_ISE_901",
+
+                // Limits
+                RATE_LIMIT_EXCEEDED       = "TB_LIM_700",
+                QUOTA_EXCEEDED            = "TB_LIM_701",
+                TOO_MANY_ATTEMPTS         = "TB_LIM_702",
+
+                // Payments
+                PAYMENT_FAILED            = "TB_PAY_800",
+                PAYMENT_METHOD_UNSUPPORTED = "TB_PAY_801",
+                REFUND_FAILED             = "TB_PAY_802",
+
+                // Tenant
+                TENANT_PENDING_APPROVAL   = "TENANT_PENDING_APPROVAL",
+                TENANT_REJECTED           = "TENANT_REJECTED",
+                TENANT_SUSPENDED          = "TENANT_SUSPENDED",
+                TENANT_UNAVAILABLE        = "TENANT_UNAVAILABLE",
+            }
+            ```
+
+            ---
+
+            ## Related
+
+            - [Idempotency & Retries](/docs/idempotency-retries)
+            - [Webhooks](/docs/webhooks)
+            - [Rate Limits](/docs/rate-limits)
+            - [Booking Lifecycle](/docs/booking-lifecycle)
+            - [Payment Methods](/docs/payment-methods)

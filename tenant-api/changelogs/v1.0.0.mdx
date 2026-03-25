@@ -1,0 +1,116 @@
+---
+title: "v1.0.0"
+description: "The first stable release of the Travelbase Business API. A complete, production-ready platform for searching, booking, and managing flights."
+icon: "rocket"
+og:title: "Travelbase API v1.0.0 — General Availability"
+og:description: "Search, book, and manage flights at scale. Travelbase v1.0.0 is now generally available."
+---
+
+<Note>
+    **Released on February 19, 2026** · This is the first stable, production-ready release of the Travelbase Business
+    API.
+    Integrations built on `v1.0.0` are covered by our API stability guarantee.
+</Note>
+
+# Travelbase API — v1.0.0 General Availability
+
+We're excited to announce that the **Travelbase Business API is now generally available**.
+
+Following an extended private beta with select travel companies and aggregators, `v1.0.0` delivers a complete, production-hardened platform for searching, booking, and managing flights at scale.
+
+---
+
+### What's new in v1.0.0
+
+- Flight Search & Offers
+- Orders & Ticketing
+- Wallet System
+- Webhooks
+
+---
+
+### Flight Search
+
+```bash
+POST /v1/air/search
+```
+
+```json
+{
+  "slices": [
+    {
+      "origin": "LOS",
+      "destination": "LHR",
+      "departure_date": "2026-05-10"
+    }
+  ],
+  "passengers": [{ "type": "adult" }],
+  "cabin_class": "economy"
+}
+```
+
+<Warning>
+    Offers are ephemeral. Always check `expires_at` before booking.
+</Warning>
+
+---
+
+### Orders
+
+```bash
+POST /v1/air/orders
+```
+
+Lifecycle:
+- PENDING
+- PROCESSING
+- TICKETED
+- FAILED
+
+---
+
+### Wallet
+
+Pre-fund your wallet and bookings are automatically debited. Failed bookings are refunded instantly.
+
+---
+
+### Webhooks
+
+Events:
+- order.created
+- order.ticketed
+- order.failed
+- wallet.updated
+
+<Warning>
+    Webhooks use at-least-once delivery. Deduplicate events using event IDs.
+</Warning>
+
+---
+
+### Authentication
+
+- API Key → `x-api-key`
+- JWT → `Authorization: Bearer <token>`
+
+---
+
+### Platform Features
+
+- Idempotency via `Idempotency-Key`
+- Rate limiting (429 on exceed)
+- Standardised error responses
+- Cursor-based pagination
+
+---
+
+### Get Started
+
+- Create an account
+- Fund your wallet
+- Make your first API call
+
+---
+
+— Travelbase Team

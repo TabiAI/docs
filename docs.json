@@ -6,18 +6,15 @@
     "light": "/images/Travelbase_logo.png",
     "dark": "/images/Travelbase_logo_white.png"
   },
-
   "colors": {
     "primary": "#675DFF",
     "light": "#675DFF",
     "dark": "#675DFF"
   },
-
   "navigation": {
     "tabs": [
-
       {
-        "tab": "Getting started",
+        "tab": "Quickstart",
         "groups": [
           {
             "group": "Introduction",
@@ -29,11 +26,9 @@
           }
         ]
       },
-
       {
         "tab": "Concepts",
         "groups": [
-
           {
             "group": "Core Concepts",
             "pages": [
@@ -44,7 +39,6 @@
               "tenant-api/cabin-classes"
             ]
           },
-
           {
             "group": "Objects",
             "pages": [
@@ -56,10 +50,24 @@
               "tenant-api/objects/segment"
             ]
           }
-
         ]
       },
-
+      {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Guides",
+            "pages": [
+              "tenant-api/guides/search-flights",
+              "tenant-api/guides/book-flight",
+              "tenant-api/guides/handle-expiration",
+              "tenant-api/guides/idempotency",
+              "tenant-api/guides/webhooks",
+              "tenant-api/guides/error-handling"
+            ]
+          }
+        ]
+      },
       {
         "tab": "API reference",
         "groups": [
@@ -75,21 +83,18 @@
               "tenant-api/offers"
             ]
           },
-
           {
             "group": "Orders",
             "pages": [
               "tenant-api/orders"
             ]
           },
-
           {
             "group": "Financial",
             "pages": [
               "tenant-api/wallet"
             ]
           },
-
           {
             "group": "Platform",
             "pages": [
@@ -97,27 +102,21 @@
               "tenant-api/webhooks"
             ]
           }
-
         ]
       },
-
       {
-        "tab": "Guides",
+        "tab": "Changelog",
         "groups": [
           {
-            "group": "Workflows",
+            "group": "Releases",
             "pages": [
-              "tenant-api/guides/search-flights",
-              "tenant-api/guides/book-flight",
-              "tenant-api/guides/handle-expiration"
+              "tenant-api/changelogs/v1.0.0"
             ]
           }
         ]
       }
-
     ]
   },
-
   "navbar": {
     "links": [
       {
@@ -126,14 +125,12 @@
         "icon": "mail"
       }
     ],
-
     "primary": {
       "type": "button",
       "label": "Dashboard",
       "href": "https://dashboard.travelbase.ai"
     }
   },
-
   "footer": {
     "socials": {
       "website": "https://travelbase.ai",
@@ -141,6 +138,5 @@
       "twitter": "https://twitter.com/travelbase-ai"
     }
   },
-
   "favicon": "/images/Vector.svg"
 }
