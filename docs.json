@@ -27,32 +27,6 @@
         ]
       },
       {
-        "tab": "Concepts",
-        "groups": [
-          {
-            "group": "Core Concepts",
-            "pages": [
-              "tenant-api/core-concepts",
-              "tenant-api/locations-concept",
-              "tenant-api/passengers",
-              "tenant-api/slices",
-              "tenant-api/cabin-classes"
-            ]
-          },
-          {
-            "group": "Objects",
-            "pages": [
-              "tenant-api/objects/offer-request",
-              "tenant-api/objects/offer",
-              "tenant-api/objects/order",
-              "tenant-api/objects/passenger",
-              "tenant-api/objects/slice",
-              "tenant-api/objects/segment"
-            ]
-          }
-        ]
-      },
-      {
         "tab": "Guides",
         "groups": [
           {
