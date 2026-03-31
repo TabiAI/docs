@@ -196,7 +196,7 @@ main::after {
     width: 90vw;
     height: 500px;
 
-    background-image: url('/images/Travelbase_logo.png');
+    background-image: url('../images/Travelbase_logo.png');
     background-repeat: no-repeat;
     background-position: bottom center;
     background-size: contain;
@@ -207,7 +207,7 @@ main::after {
 
     /* Keeps the logo BEHIND the text and non-interactive */
     pointer-events: none;
-    z-index: 0;
+    z-index: 1000;
 
     /* The "Fade-In" from the bottom */
     mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 20%, transparent 80%);
