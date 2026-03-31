@@ -12,7 +12,7 @@
     "dark": "#675DFF"
   },
   "styles": [
-    "./styles/custom.css"
+    "./styles/custom.css", "./styles/custom.js"
   ],
   "navigation": {
     "tabs": [

@@ -1,88 +1,312 @@
 /* ===================================================== */
-/* TRAVELBASE — PREMIUM BACKGROUND SYSTEM (ENTERPRISE) */
+/* TRAVELBASE — HORIZON SYSTEM     */
 /* ===================================================== */
 
-/* ============================= */
-/* WATERMARK (LIGHT MODE) */
-/* ============================= */
+:root {
+    --tb-brand: 15, 98, 254;
+    --tb-sky: 130, 177, 255;
+    --tb-grid: rgba(15, 98, 254, 0.04);
+}
+
+/* ===================================================== */
+/* 1. SKY (DEPTH BASE)                                   */
+/* ===================================================== */
 html::before {
     content: "";
     position: fixed;
     inset: 0;
+    z-index: -6;
 
-    background-image: url('/images/Travelbase_logo.png');
-    background-repeat: no-repeat;
-
-    /* Premium positioning (not dead center) */
-    background-position: 55% 55%;
-    background-size: 55%;
-
-    /* Direction + scale */
-    transform: rotate(-25deg) scale(1.15);
-
-    /* Subtle presence */
-    opacity: 0.04;
-
-    /* Polish */
-    filter: blur(0.3px);
+    background: radial-gradient(
+            circle at 50% -10%,
+            rgba(var(--tb-sky), 0.15) 0%,
+            transparent 60%
+    );
 
     pointer-events: none;
-    z-index: 0;
 }
 
-/* ============================= */
-/* GRADIENT LAYER (LIGHT MODE) */
-/* ============================= */
+/* ===================================================== */
+/* 2. GRID (STRUCTURE)                                   */
+/* ===================================================== */
 html::after {
     content: "";
     position: fixed;
     inset: 0;
+    z-index: -5;
 
-    background: radial-gradient(
-            circle at 15% 20%,
-            rgba(103, 93, 255, 0.10),
-            transparent 45%
-    ),
-    radial-gradient(
-            circle at 85% 80%,
-            rgba(103, 93, 255, 0.07),
-            transparent 55%
+    background-image: linear-gradient(var(--tb-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--tb-grid) 1px, transparent 1px);
+
+    background-size: 40px 40px;
+
+    mask-image: linear-gradient(to bottom,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 0.5) 50%,
+    rgba(0, 0, 0, 0) 100%
     );
 
     pointer-events: none;
-    z-index: 0;
 }
 
-/* ============================= */
-/* 🌙 DARK MODE */
-/* ============================= */
-.dark html::before {
-    background-image: url('/images/Travelbase_logo_white.png');
+/* ===================================================== */
+/* 3. TRAVEL BACKGROUND (TOP-BIASED + PARALLAX)           */
+/* ===================================================== */
+body::before {
+    content: "";
+    position: fixed;
+    inset: -3%; /* slight overflow for movement */
+    z-index: -4;
 
-    opacity: 0.055;
+    background-image: url('/images/background_image.png');
+    background-size: cover;
 
-    filter: brightness(1.25) contrast(1.1) blur(0.3px);
+    /* 🔥 THIS IS THE KEY CHANGE (show top more) */
+    background-position: top center;
+
+    background-repeat: no-repeat;
+
+    filter: grayscale(1) contrast(0.95) brightness(1.05) blur(2px);
+
+    opacity: 0.085;
+
+    /* Horizon fade */
+    mask-image: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.9) 0%,
+            rgba(0, 0, 0, 0.5) 40%,
+            rgba(0, 0, 0, 0.15) 70%,
+            rgba(0, 0, 0, 0) 100%
+    );
+
+    pointer-events: none;
+
+    /* subtle motion */
+    animation: tb-float 40s ease-in-out infinite alternate;
 }
 
-.dark html::after {
+@keyframes tb-float {
+    0% {
+        transform: scale(1.02) translateY(0px);
+    }
+    100% {
+        transform: scale(1.05) translateY(-18px);
+    }
+}
+
+/* ===================================================== */
+/* 4. LIGHT SYSTEM (DEPTH + FOCUS)                        */
+/* ===================================================== */
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -3;
+
+    background: radial-gradient(circle at 20% 25%, rgba(var(--tb-brand), 0.08), transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(var(--tb-brand), 0.06), transparent 40%);
+
+    pointer-events: none;
+}
+
+/* ===================================================== */
+/* 9. CURSOR LIGHTING (ATMOSPHERIC INTERACTION)           */
+/* ===================================================== */
+
+body::marker {
+    content: "";
+}
+
+body::selection {
+    background: rgba(var(--tb-brand), 0.2);
+}
+
+body::after {
+    /* keep your watermark — DO NOT REMOVE */
+}
+
+/* ✨ NEW LIGHT LAYER */
+.cursor-light {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+
     background: radial-gradient(
-            circle at 15% 20%,
-            rgba(103, 93, 255, 0.16),
-            transparent 45%
-    ),
-    radial-gradient(
-            circle at 85% 80%,
-            rgba(103, 93, 255, 0.12),
-            transparent 55%
+            600px circle at var(--cursor-x, 50%) var(--cursor-y, 50%),
+            rgba(var(--tb-brand), 0.08),
+            transparent 60%
+    );
+
+    transition: background 0.1s ease;
+}
+
+/* ===================================================== */
+/* 10. DYNAMIC SKY SHIFT (TIME-BASED ATMOSPHERE)          */
+/* ===================================================== */
+
+html::before {
+    animation: tb-sky-shift 60s ease-in-out infinite alternate;
+}
+
+@keyframes tb-sky-shift {
+    0% {
+        background: radial-gradient(
+                circle at 50% -10%,
+                rgba(var(--tb-sky), 0.12),
+                transparent 60%
+        );
+    }
+
+    50% {
+        background: radial-gradient(
+                circle at 60% -5%,
+                rgba(var(--tb-brand), 0.18),
+                transparent 65%
+        );
+    }
+
+    100% {
+        background: radial-gradient(
+                circle at 40% -15%,
+                rgba(var(--tb-sky), 0.14),
+                transparent 60%
+        );
+    }
+}
+
+/* ===================================================== */
+/* TRAVELBASE — GLOBAL ENTERPRISE "LANDING STRIP" FOOTER */
+/* ===================================================== */
+
+/* 1. Reset the pseudo-element on main to be FIXED */
+main::after {
+    content: "";
+    display: block;
+
+    /* Changed to fixed to keep it on screen at all times */
+    position: fixed;
+
+    /* Anchored to the viewport bottom */
+    bottom: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    /* Extreme Enterprise Scale */
+    width: 90vw;
+    height: 500px;
+
+    background-image: url('/images/Travelbase_logo.png');
+    background-repeat: no-repeat;
+    background-position: bottom center;
+    background-size: contain;
+
+    /* Professional Watermark Styling */
+    opacity: 0.05;
+    filter: grayscale(1) brightness(0.9);
+
+    /* Keeps the logo BEHIND the text and non-interactive */
+    pointer-events: none;
+    z-index: 0;
+
+    /* The "Fade-In" from the bottom */
+    mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 20%, transparent 80%);
+    -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 20%, transparent 80%);
+}
+
+/* 2. Article padding is still good for the very end of the page,
+      but no longer strictly required for the logo visibility */
+article {
+    padding-bottom: 200px !important;
+}
+
+/* 🌙 DARK MODE REFINEMENT */
+.dark main::after {
+    background-image: url('/images/Travelbase_logo_white.png');
+    opacity: 0.08;
+    filter: brightness(1.2) contrast(0.7);
+}
+
+/* 3. MOBILE SCALING */
+@media (max-width: 768px) {
+    main::after {
+        width: 120vw; /* Slightly wider on mobile for impact */
+        height: 250px;
+        bottom: -20px;
+    }
+}
+
+
+/* ===================================================== */
+/* 6. HEADER (GLASS)                                     */
+/* ===================================================== */
+.mintlify-header {
+    border-bottom: 1px solid rgba(var(--tb-brand), 0.1) !important;
+    backdrop-filter: blur(14px);
+    background: rgba(255, 255, 255, 0.65);
+}
+
+/* ===================================================== */
+/* 7. SEARCH (PRECISION UI)                              */
+/* ===================================================== */
+.mintlify-search-button {
+    border-radius: 4px !important;
+    border: 1px solid rgba(var(--tb-brand), 0.15) !important;
+    background: rgba(255, 255, 255, 0.75) !important;
+    transition: all 0.2s ease;
+}
+
+.mintlify-search-button:hover {
+    border-color: rgba(var(--tb-brand), 0.5) !important;
+    box-shadow: 0 6px 18px rgba(var(--tb-brand), 0.1);
+}
+
+/* ===================================================== */
+/* 8. FLIGHT LOG (COORDINATE SYSTEM)                      */
+/* ===================================================== */
+@media (min-width: 1024px) {
+    .flight-log::before {
+        content: "TRAVELBASE // LAT: 6.5244N // LNG: 3.3792E // AIR SYSTEM ACTIVE";
+        position: fixed;
+        bottom: 30px;
+        left: 40px;
+
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 10px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+
+        color: rgba(var(--tb-brand), 0.4);
+        z-index: 10;
+    }
+}
+
+/* ===================================================== */
+/* 🌙 DARK MODE (NIGHT FLIGHT)                           */
+/* ===================================================== */
+.dark {
+    --tb-grid: rgba(255, 255, 255, 0.03);
+}
+
+.dark html::before {
+    background: radial-gradient(
+            circle at 50% -20%,
+            rgba(var(--tb-brand), 0.2) 0%,
+            transparent 70%
     );
 }
 
-/* ============================= */
-/* RESPONSIVE (MOBILE POLISH) */
-/* ============================= */
-@media (max-width: 768px) {
-    html::before {
-        background-size: 75%;
-        opacity: 0.03;
-    }
+.dark body::before {
+    opacity: 0.06;
+    filter: grayscale(1) contrast(1.1) brightness(0.7) blur(2px);
+}
+
+.dark .mintlify-header {
+    background: rgba(10, 10, 15, 0.6);
+}
+
+.dark .mintlify-content::before {
+    background-image: url('/images/Travelbase_logo_white.png');
+    opacity: 0.05;
 }
