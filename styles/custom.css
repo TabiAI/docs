@@ -219,7 +219,7 @@ article {
 }
 
 /* 🌙 DARK MODE REFINEMENT */
-.dark main::after {
+.dark footer::after {
     background-image: url('/images/Travelbase_logo_white.png');
     opacity: 0.18;
     filter: brightness(1.2) contrast(0.7);
