@@ -310,3 +310,14 @@ article {
     background-image: url('/images/Travelbase_logo_white.png');
     opacity: 0.05;
 }
+
+
+footer a[href*="mintlify.com"] {
+    display: none !important;
+}
+
+.mintlify-footer-branding,
+div[class*="PoweredBy"] {
+    display: none !important;
+    visibility: hidden !important;
+}
