@@ -227,10 +227,25 @@ article {
 
 /* 3. MOBILE SCALING */
 @media (max-width: 768px) {
-    main::after {
-        width: 120vw; /* Slightly wider on mobile for impact */
-        height: 250px;
-        bottom: -20px;
+    footer::after {
+        width: 120vw;
+        height: clamp(160px, 30vh, 260px);
+
+        bottom: 0;
+        transform: translateX(-50%) scale(1.05);
+
+        opacity: 0.08;
+
+        mask-image: linear-gradient(
+                to top,
+                rgba(0, 0, 0, 1) 40%,
+                transparent 100%
+        );
+        -webkit-mask-image: linear-gradient(
+                to top,
+                rgba(0, 0, 0, 1) 40%,
+                transparent 100%
+        );
     }
 }
 
