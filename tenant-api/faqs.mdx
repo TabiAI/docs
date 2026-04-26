@@ -1,0 +1,143 @@
+---
+title: FAQs
+description: Learn how the travel industry works and how to integrate with Travelbase effectively.
+---
+
+### Travel Industry Foundations
+
+Before diving into the code, it is essential to understand the mechanics of global flight distribution.
+
+<AccordionGroup>
+    <Accordion title="How do flight booking systems work?" icon="network-wired">
+        Flight booking systems connect airlines, inventory, and booking platforms. When a user searches:
+        * **Query:** Systems query airline Global Distribution Systems (GDS) or New Distribution Capability (NDC) APIs.
+        * **Calculation:** Prices are calculated in real-time based on fare classes.
+        * **Results:** Results are returned as flight options.
+    </Accordion>
+
+    <Accordion title="What is an offer?" icon="briefcase">
+        An offer is a **priced flight option** returned after a search. It acts as a snapshot of a flight's availability and cost at a specific moment.
+
+        It includes:
+        * Flight segments and routes
+        * Total pricing (including taxes)
+        * Passenger details & baggage rules
+
+        <Warning>Offers are temporary and typically expire within 15–30 minutes.</Warning>
+    </Accordion>
+
+    <Accordion title="Why do flight prices change frequently?" icon="chart-line-up">
+        Flight prices are dynamic and influenced by **Yield Management** algorithms. They depend on:
+        * Real-time demand and historical trends.
+        * Remaining seat availability in specific "fare buckets."
+        * Time remaining before departure.
+    </Accordion>
+
+    <Accordion title="What is the difference between booking and ticketing?" icon="right-left">
+        * **Booking (PNR):** This reserves the seat in the airline's system. It generates a Record Locator but does not yet authorize the issuance of a travel document.
+        * **Ticketing:** This is the financial settlement. Once the payment is verified, an e-ticket number is issued. **A booking is not a guarantee of travel until it is ticketed.**
+    </Accordion>
+
+    <Accordion title="Why can a booking fail?" icon="circle-exclamation">
+        Bookings usually fail due to **Inventory Drift** (someone else took the last seat while you were entering payment details) or **Price Changes** (the airline updated the fare during the session).
+    </Accordion>
+</AccordionGroup>
+
+---
+
+### Travelbase Integration
+
+How Travelbase models and simplifies these complex travel industry workflows.
+
+<AccordionGroup>
+    <Accordion title="How do I authenticate with Travelbase?" icon="key">
+        We support standard Bearer token and API Key authentication.
+        ```bash
+        # Example header
+        Authorization: Bearer <your_token>
+        ```
+        You can manage your production and sandbox keys from the [Travelbase Dashboard](https://dashboard.travelbase.ai).
+    </Accordion>
+
+    <Accordion title="What environments are available?" icon="flask">
+        | Environment | Base URL | Purpose |
+        | :--- | :--- | :--- |
+        | **Sandbox** | `https://sandbox.travelbase.ai` | Testing and development |
+        | **Live** | `https://live.travelbase.ai` | Production bookings |
+    </Accordion>
+
+    <Accordion title="What is the order lifecycle?" icon="arrows-spin">
+        Orders move through several states. Your frontend should be built to handle these transitions:
+        * `PENDING`: Initial state after order creation.
+        * `PROCESSING`: Ticketing is in progress with the carrier.
+        * `TICKETED`: Success! The e-ticket has been issued.
+        * `FAILED`: The booking could not be completed (e.g., payment failure).
+    </Accordion>
+
+    <Accordion title="Why is idempotency required?" icon="shield-check">
+        Idempotency ensures that if a network error occurs, retrying the request won't result in two seats being booked or two credit card charges.
+
+        Always include the `Idempotency-Key` header:
+        ```http
+        Idempotency-Key: uuid-string-12345
+        ```
+    </Accordion>
+
+    <Accordion title="How do webhooks work?" icon="webhook">
+        Because ticketing can take anywhere from seconds to minutes, we use webhooks to notify you of status changes.
+        * `order.ticketed`: Triggered when the e-ticket is ready.
+        * `order.failed`: Triggered if the carrier rejects the final issuance.
+
+        *Note: Webhook delivery is **at-least-once**. Ensure your endpoint handles duplicate events.*
+    </Accordion>
+</AccordionGroup>
+
+---
+
+### Common Integration Mistakes
+
+Avoid these pitfalls to ensure a smooth "Go-Live" process.
+
+<AccordionGroup>
+
+    <Accordion title="Not handling retries" icon="repeat">
+        Always retry **5xx errors** using the **same idempotency key**.
+
+        This ensures that duplicate requests do not result in **double bookings** or inconsistent state in your system.
+    </Accordion>
+
+    <Accordion title="Ignoring expiration" icon="clock">
+        Offers are **time-sensitive**.
+
+        Always check the `expires_at` timestamp before attempting to book.
+        Using an expired offer will result in failed bookings or pricing mismatches.
+    </Accordion>
+
+    <Accordion title="Skipping webhooks" icon="bell-slash">
+        Polling the API for updates is inefficient and unreliable.
+
+        **Webhooks are the source of truth** for asynchronous events such as:
+        - Order status updates
+        - Ticket issuance
+        - Failures and refunds
+
+        Rely on webhooks to keep your system in sync.
+    </Accordion>
+
+    <Accordion title="Assuming sync success" icon="bolt">
+        A `201 Created` response only confirms that the request was accepted.
+
+        It **does not mean the ticket has been issued**.
+
+        Always track the order lifecycle:
+        - `PENDING`
+        - `PROCESSING`
+        - `TICKETED` or `FAILED`
+
+        Use webhooks or status endpoints to confirm final state.
+    </Accordion>
+</AccordionGroup>
+
+<Tip>
+    Need more help? Join our [Slack community](https://slack.travelbase.com) or contact support at `support@travelbase.ai`.
+</Tip>

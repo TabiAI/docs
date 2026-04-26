@@ -114,6 +114,17 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "FAQs",
+        "groups": [
+          {
+            "group": "Frequently Asked Questions",
+            "pages": [
+              "tenant-api/faqs"
+            ]
+          }
+        ]
       }
     ]
   },
