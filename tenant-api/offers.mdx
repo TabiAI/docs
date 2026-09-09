@@ -160,8 +160,8 @@ curl https://sandbox.travelbase.ai/v1/air/search \
           "arrival_airport": "LAX",
           "departure_time": "2026-03-22T08:00:00Z",
           "arrival_time": "2026-03-22T11:00:00Z",
-          "airline": "AA",
-          "flight_number": "AA100"
+          "airline": "Example Air",
+          "flight_number": "100"
         }
       ]
     }
@@ -226,16 +226,24 @@ curl "https://sandbox.travelbase.ai/v1/air/offers/off_123?include_additional_bag
   "expires_at": "2026-02-23T19:25:43Z",
   "slices": [
     {
-      "origin": "JFK",
-      "destination": "LAX",
+      "origin": "LOS",
+      "destination": "DAC",
       "segments": [
         {
-          "departure_airport": "JFK",
-          "arrival_airport": "LAX",
-          "departure_time": "2026-03-22T08:00:00Z",
-          "arrival_time": "2026-03-22T11:00:00Z",
-          "airline": "AA",
-          "flight_number": "AA100"
+          "departure_airport": "LOS",
+          "arrival_airport": "DOH",
+          "departure_time": "2026-09-16T14:45:00Z",
+          "arrival_time": "2026-09-17T00:05:00Z",
+          "airline": "Example Air",
+          "flight_number": "1406"
+        },
+        {
+          "departure_airport": "DOH",
+          "arrival_airport": "DAC",
+          "departure_time": "2026-09-17T01:25:00Z",
+          "arrival_time": "2026-09-17T09:40:00Z",
+          "airline": "Example Air",
+          "flight_number": "0640"
         }
       ]
     }
@@ -265,6 +273,8 @@ curl "https://sandbox.travelbase.ai/v1/air/offers/off_123?include_additional_bag
   ]
 }
 ```
+
+The slice-level `origin` and `destination` describe the complete journey. For a connecting itinerary, every segment's `departure_airport` and `arrival_airport` describe that individual flight leg.
 
 An empty `additionalBaggageOptions` array means the selected offer does not currently support extra bags. Retrieve the offer again immediately before creating the order because availability and prices can change.
 
